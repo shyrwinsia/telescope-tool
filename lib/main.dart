@@ -1,117 +1,425 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 void main() {
-  runApp(MyApp());
+  runApp(TelescopeTool());
 }
 
-class MyApp extends StatelessWidget {
+class TelescopeTool extends StatefulWidget {
   // This widget is the root of your application.
   @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Flutter Demo',
-      theme: ThemeData(
-        // This is the theme of your application.
-        //
-        // Try running your application with "flutter run". You'll see the
-        // application has a blue toolbar. Then, without quitting the app, try
-        // changing the primarySwatch below to Colors.green and then invoke
-        // "hot reload" (press "r" in the console where you ran "flutter run",
-        // or simply save your changes to "hot reload" in a Flutter IDE).
-        // Notice that the counter didn't reset back to zero; the application
-        // is not restarted.
-        primarySwatch: Colors.blue,
-        // This makes the visual density adapt to the platform that you run
-        // the app on. For desktop platforms, the controls will be smaller and
-        // closer together (more dense) than on mobile platforms.
-        visualDensity: VisualDensity.adaptivePlatformDensity,
-      ),
-      home: MyHomePage(title: 'Flutter Demo Home Page'),
-    );
-  }
+  _TelescopeToolState createState() => _TelescopeToolState();
 }
 
-class MyHomePage extends StatefulWidget {
-  MyHomePage({Key key, this.title}) : super(key: key);
+class _TelescopeToolState extends State<TelescopeTool> {
+  List<String> types = ['Refractor', 'Reflector'];
+  List<String> units = ['Metric', 'English'];
+  Map<String, List<String>> subtypes = {
+    'Refractor': ['Galilean', 'Keplerian', 'Achromatic', 'Apochromatic'],
+    'Reflector': ['Newtonian', 'Cassegrain', 'Gregorian']
+  };
+  String type, subtype, unitTelescope, unitEyepiece;
+  bool hasData = false;
 
-  // This widget is the home page of your application. It is stateful, meaning
-  // that it has a State object (defined below) that contains fields that affect
-  // how it looks.
+  final telescopeApertureController = TextEditingController();
+  final telescopeFocalLengthController = TextEditingController();
+  final eyepieceFocalLengthController = TextEditingController();
+  final barlowController = TextEditingController();
 
-  // This class is the configuration for the state. It holds the values (in this
-  // case the title) provided by the parent (in this case the App widget) and
-  // used by the build method of the State. Fields in a Widget subclass are
-  // always marked "final".
-
-  final String title;
+  String magnification, fnum, maxmag, maxeyepiece;
 
   @override
-  _MyHomePageState createState() => _MyHomePageState();
-}
+  void initState() {
+    super.initState();
+    type = types.first;
+    subtype = subtypes[types.first].first;
+    unitTelescope = units.first;
+    unitEyepiece = units.first;
+  }
 
-class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
+  calculate() {
+    // convert fls to mm
+    // magnification = (scope focal length / eyepiece focal length) * barlow
+    // f number = round (scope focal length / scope aperture)
+    // max useful mag = 2 * aperture (in mm)
+    // max useful eyepiece = scope fl / max useful mag
+    num tfl = double.tryParse(telescopeFocalLengthController.value.text) ?? 0;
+    num efl = double.tryParse(eyepieceFocalLengthController.value.text) ?? 0;
+    num tap = double.tryParse(telescopeApertureController.text) ?? 0;
+    num bar = double.tryParse(barlowController.value.text) ?? 0;
 
-  void _incrementCounter() {
+    if (unitTelescope == "English") {
+      tfl *= 25.4;
+      tap *= 25.4;
+    }
+
+    if (unitEyepiece == "English") {
+      efl *= 25.4;
+    }
+
     setState(() {
-      // This call to setState tells the Flutter framework that something has
-      // changed in this State, which causes it to rerun the build method below
-      // so that the display can reflect the updated values. If we changed
-      // _counter without calling setState(), then the build method would not be
-      // called again, and so nothing would appear to happen.
-      _counter++;
+      if (efl != 0 && tfl != 0 && tap != 0) {
+        this.magnification = ((tfl / efl) * bar).toStringAsFixed(0);
+        this.fnum = (tfl / tap).roundToDouble().toStringAsFixed(0);
+        this.maxmag = (2 * tap).toStringAsFixed(0);
+        this.maxeyepiece = (tfl / ((2 * tap))).toStringAsFixed(0);
+        this.hasData = true;
+      } else {
+        this.hasData = false;
+      }
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    // This method is rerun every time setState is called, for instance as done
-    // by the _incrementCounter method above.
-    //
-    // The Flutter framework has been optimized to make rerunning build methods
-    // fast, so that you can just rebuild anything that needs updating rather
-    // than having to individually change instances of widgets.
-    return Scaffold(
-      appBar: AppBar(
-        // Here we take the value from the MyHomePage object that was created by
-        // the App.build method, and use it to set our appbar title.
-        title: Text(widget.title),
+    return MaterialApp(
+      title: 'Telescope Tool',
+      theme: ThemeData(
+        primarySwatch: Colors.indigo,
+        visualDensity: VisualDensity.adaptivePlatformDensity,
       ),
-      body: Center(
-        // Center is a layout widget. It takes a single child and positions it
-        // in the middle of the parent.
-        child: Column(
-          // Column is also a layout widget. It takes a list of children and
-          // arranges them vertically. By default, it sizes itself to fit its
-          // children horizontally, and tries to be as tall as its parent.
-          //
-          // Invoke "debug painting" (press "p" in the console, choose the
-          // "Toggle Debug Paint" action from the Flutter Inspector in Android
-          // Studio, or the "Toggle Debug Paint" command in Visual Studio Code)
-          // to see the wireframe for each widget.
-          //
-          // Column has various properties to control how it sizes itself and
-          // how it positions its children. Here we use mainAxisAlignment to
-          // center the children vertically; the main axis here is the vertical
-          // axis because Columns are vertical (the cross axis would be
-          // horizontal).
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            Text(
-              'You have pushed the button this many times:',
-            ),
-            Text(
-              '$_counter',
-              style: Theme.of(context).textTheme.headline4,
-            ),
-          ],
+      home: Scaffold(
+          appBar: AppBar(
+            title: Text('Telescope Magnification and Eyepiece Chooser'),
+          ),
+          body: telescope()),
+    );
+  }
+
+  Widget telescopeSettings() {
+    return Expanded(
+      flex: 2,
+      child: Padding(
+        padding: EdgeInsets.all(32),
+        child: Container(
+          alignment: Alignment.topLeft,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              telescopeType(),
+              SizedBox(height: 40),
+              telescopeParams(),
+              SizedBox(height: 40),
+              eyepieceParams(),
+              SizedBox(height: 40),
+            ],
+          ),
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
-        child: Icon(Icons.add),
-      ), // This trailing comma makes auto-formatting nicer for build methods.
     );
+  }
+
+  Widget telescopeType() {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Telescope Type',
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+        ),
+        SizedBox(height: 12),
+        DropdownButton<String>(
+          value: this.type,
+          items: this.types.map((String value) {
+            return DropdownMenuItem<String>(
+              value: value,
+              child: Text(value),
+            );
+          }).toList(),
+          onChanged: (choice) {
+            setState(() {
+              this.type = choice;
+              this.subtype = subtypes[choice].first;
+            });
+          },
+          isExpanded: true,
+        ),
+        DropdownButton<String>(
+          value: this.subtype,
+          items: this.subtypes[this.type].map((String value) {
+            return DropdownMenuItem<String>(
+              value: value,
+              child: Text(value),
+            );
+          }).toList(),
+          onChanged: (choice) {
+            setState(() {
+              this.subtype = choice;
+            });
+          },
+          isExpanded: true,
+        ),
+      ],
+    );
+  }
+
+  Widget telescopeParams() {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Telescope Parameters',
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+        ),
+        SizedBox(height: 12),
+        DropdownButton<String>(
+          value: this.unitTelescope,
+          items: this.units.map((String value) {
+            return DropdownMenuItem<String>(
+              value: value,
+              child: Text(value),
+            );
+          }).toList(),
+          onChanged: (choice) {
+            setState(() {
+              this.unitTelescope = choice;
+            });
+            calculate();
+          },
+          isExpanded: true,
+        ),
+        SizedBox(height: 8),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            Expanded(
+              child: TextField(
+                controller: telescopeApertureController,
+                onChanged: (change) => calculate(),
+                decoration: InputDecoration(labelText: 'Aperture'),
+                inputFormatters: <TextInputFormatter>[
+                  DecimalTextInputFormatter()
+                ],
+                keyboardType: TextInputType.number,
+              ),
+            ),
+            SizedBox(width: 12),
+            this.unitTelescope == 'Metric'
+                ? Text('mm',
+                    style: TextStyle(fontSize: 16, color: Colors.black54))
+                : Text('in',
+                    style: TextStyle(fontSize: 16, color: Colors.black54)),
+          ],
+        ),
+        SizedBox(height: 12),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            Expanded(
+              child: TextField(
+                controller: telescopeFocalLengthController,
+                onChanged: (change) => calculate(),
+                decoration: new InputDecoration(labelText: 'Focal Length'),
+                inputFormatters: <TextInputFormatter>[
+                  DecimalTextInputFormatter()
+                ],
+                keyboardType: TextInputType.number,
+              ),
+            ),
+            SizedBox(width: 12),
+            this.unitTelescope == 'Metric'
+                ? Text('mm',
+                    style: TextStyle(fontSize: 16, color: Colors.black54))
+                : Text('in',
+                    style: TextStyle(fontSize: 16, color: Colors.black54)),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget eyepieceParams() {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Eyepiece Parameters',
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+        ),
+        SizedBox(height: 12),
+        DropdownButton<String>(
+          value: this.unitEyepiece,
+          items: this.units.map((String value) {
+            return DropdownMenuItem<String>(
+              value: value,
+              child: Text(value),
+            );
+          }).toList(),
+          onChanged: (choice) {
+            setState(() {
+              this.unitEyepiece = choice;
+            });
+            calculate();
+          },
+          isExpanded: true,
+        ),
+        SizedBox(height: 8),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            Expanded(
+              child: TextField(
+                controller: eyepieceFocalLengthController,
+                onChanged: (change) => calculate(),
+                decoration: InputDecoration(labelText: 'Focal Length'),
+                inputFormatters: <TextInputFormatter>[
+                  DecimalTextInputFormatter()
+                ],
+                keyboardType: TextInputType.number,
+              ),
+            ),
+            SizedBox(width: 12),
+            this.unitEyepiece == 'Metric'
+                ? Text('mm',
+                    style: TextStyle(fontSize: 16, color: Colors.black54))
+                : Text('in',
+                    style: TextStyle(fontSize: 16, color: Colors.black54)),
+          ],
+        ),
+        SizedBox(height: 12),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            Expanded(
+              child: TextField(
+                controller: barlowController,
+                onChanged: (change) => calculate(),
+                decoration: InputDecoration(labelText: 'Barlow / Reducer'),
+                inputFormatters: <TextInputFormatter>[
+                  DecimalTextInputFormatter()
+                ],
+                keyboardType: TextInputType.number,
+              ),
+            ),
+            SizedBox(width: 12),
+            this.unitEyepiece == 'Metric'
+                ? Text('mm',
+                    style: TextStyle(fontSize: 16, color: Colors.black54))
+                : Text('in',
+                    style: TextStyle(fontSize: 16, color: Colors.black54)),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget telescope() {
+    return Row(
+      children: [
+        telescopeSettings(),
+        telescopeVisualization(),
+      ],
+    );
+  }
+
+  Widget telescopeVisualization() {
+    return Expanded(
+      flex: 7,
+      child: Padding(
+        padding: EdgeInsets.all(32),
+        child: Container(
+          alignment: Alignment.topLeft,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '${this.subtype} Telescope',
+                style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
+              ),
+              SizedBox(height: 24),
+              Text(
+                'Telescope diagram goes here',
+              ),
+              SizedBox(height: 40),
+              Text(
+                'Information',
+                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+              ),
+              SizedBox(height: 12),
+              dataGenerated(),
+              SizedBox(height: 40),
+              Text(
+                'Visualization',
+                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+              ),
+              SizedBox(height: 12),
+              hasData
+                  ? Center(
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Column(
+                            children: [
+                              Image(
+                                width: 30,
+                                height: 30,
+                                image: AssetImage('assets/moon.png'),
+                              ),
+                              SizedBox(height: 12),
+                              Text(
+                                'Apparent size',
+                                style: TextStyle(color: Colors.black54),
+                              )
+                            ],
+                          ),
+                          SizedBox(width: 64),
+                          Column(
+                            children: [
+                              Image(
+                                width: 400,
+                                height: 400,
+                                image: AssetImage('assets/moon.png'),
+                              ),
+                              Text(
+                                'Magnified size',
+                                style: TextStyle(color: Colors.black54),
+                              )
+                            ],
+                          ),
+                        ],
+                      ),
+                    )
+                  : Text('No valid inputs')
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  dataGenerated() {
+    return hasData
+        ? Column(
+            mainAxisAlignment: MainAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Magnification: ${this.magnification}x'),
+              SizedBox(height: 12),
+              Text('F-num: ${this.fnum}'),
+              SizedBox(height: 12),
+              Text('Maximum Useful Mag: ${this.maxmag}x'),
+              SizedBox(height: 12),
+              Text('Max useful eyepiece: ${this.maxeyepiece}mm'),
+            ],
+          )
+        : Text('No valid inputs');
+  }
+}
+
+class DecimalTextInputFormatter extends TextInputFormatter {
+  @override
+  TextEditingValue formatEditUpdate(
+      TextEditingValue oldValue, TextEditingValue newValue) {
+    final regEx = RegExp(r"^\d*\.?\d*");
+    String newString = regEx.stringMatch(newValue.text) ?? "";
+    return newString == newValue.text ? newValue : oldValue;
   }
 }
