@@ -46,7 +46,7 @@ class _TelescopeToolState extends State<TelescopeTool> {
     num tfl = double.tryParse(telescopeFocalLengthController.value.text) ?? 0;
     num efl = double.tryParse(eyepieceFocalLengthController.value.text) ?? 0;
     num tap = double.tryParse(telescopeApertureController.text) ?? 0;
-    num bar = double.tryParse(barlowController.value.text) ?? 0;
+    num bar = double.tryParse(barlowController.value.text) ?? 1;
 
     if (unitTelescope == "English") {
       tfl *= 25.4;
