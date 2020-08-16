@@ -19,7 +19,7 @@ class _TelescopeToolState extends State<TelescopeTool> {
     'Reflector': ['Newtonian', 'Cassegrain', 'Gregorian']
   };
   String type, subtype, unitTelescope, unitEyepiece;
-  bool hasData = false;
+  bool hasData = false, warn = false;
 
   final telescopeApertureController = TextEditingController();
   final telescopeFocalLengthController = TextEditingController();
@@ -63,6 +63,7 @@ class _TelescopeToolState extends State<TelescopeTool> {
         this.fnum = (tfl / tap).roundToDouble().toStringAsFixed(0);
         this.maxmag = (2 * tap).toStringAsFixed(0);
         this.maxeyepiece = (tfl / ((2 * tap))).toStringAsFixed(0);
+        this.warn = ((tfl / efl) * bar) > (2 * tap);
         this.hasData = true;
       } else {
         this.hasData = false;
@@ -401,7 +402,10 @@ class _TelescopeToolState extends State<TelescopeTool> {
             mainAxisAlignment: MainAxisAlignment.start,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Magnification: ${this.magnification}x'),
+              this.warn
+                  ? Text('Magnification: ${this.magnification}x',
+                      style: TextStyle(color: Colors.red))
+                  : Text('Magnification: ${this.magnification}x'),
               SizedBox(height: 12),
               Text('F-num: ${this.fnum}'),
               SizedBox(height: 12),
